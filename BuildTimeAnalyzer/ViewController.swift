@@ -146,7 +146,8 @@ class ViewController: NSViewController {
     }
     
     @IBAction func visitDerivedData(_ sender: AnyObject) {
-        NSWorkspace.shared.openFile(derivedDataTextField.stringValue)
+        guard let url = URL(string: derivedDataTextField.stringValue) else { return }
+        NSWorkspace.shared.open(url)
     }
     
     
@@ -262,21 +263,22 @@ extension ViewController: NSTableViewDataSource {
     
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
         guard let item = dataSource.measure(index: row) else { return false }
-        NSWorkspace.shared.openFile(item.path)
-
-        let gotoLineScript =
-            "tell application \"Xcode\"\n" +
-            "  activate\n" +
-            "end tell\n" +
-            "tell application \"System Events\"\n" +
-            "  keystroke \"l\" using command down\n" +
-            "  keystroke \"\(item.location)\"\n" +
-            "  keystroke return\n" +
-            "end tell"
-
-        DispatchQueue.main.async {
-            if let script = NSAppleScript(source: gotoLineScript) {
-                script.executeAndReturnError(nil)
+        let url = URL(filePath: item.path)
+        NSWorkspace.shared.open(url, configuration: .init()) { _, error in
+            guard error == nil else { return }
+            let gotoLineScript =
+                "tell application \"Xcode\"\n" +
+                "  activate\n" +
+                "end tell\n" +
+                "tell application \"System Events\"\n" +
+                "  keystroke \"l\" using command down\n" +
+                "  keystroke \"\(item.location)\"\n" +
+                "  keystroke return\n" +
+                "end tell"
+            DispatchQueue.main.async {
+                if let script = NSAppleScript(source: gotoLineScript) {
+                    script.executeAndReturnError(nil)
+                }
             }
         }
         
