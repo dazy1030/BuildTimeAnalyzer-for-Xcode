@@ -6,13 +6,13 @@
 import Cocoa
 
 @NSApplicationMain
-class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     
-    @IBOutlet weak var projectSelectionMenuItem: NSMenuItem!
-    @IBOutlet weak var buildTimesMenuItem: NSMenuItem!
-    @IBOutlet weak var alwaysInFrontMenuItem: NSMenuItem!
+    @IBOutlet private weak var projectSelectionMenuItem: NSMenuItem!
+    @IBOutlet private weak var buildTimesMenuItem: NSMenuItem!
+    @IBOutlet private weak var alwaysInFrontMenuItem: NSMenuItem!
     
-    var viewController: ViewController? {
+    private var viewController: ViewController? {
         return NSApplication.shared.mainWindow?.contentViewController as? ViewController
     }
     
@@ -27,26 +27,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: Actions
     
-    @IBAction func navigateToProjectSelection(_ sender: NSMenuItem) {
+    @IBAction private func navigateToProjectSelection(_ sender: NSMenuItem) {
         configureMenuItems(showBuildTimesMenuItem: true)
         
         viewController?.cancelProcessing()
         viewController?.showInstructions(true)
     }
     
-    @IBAction func navigateToBuildTimes(_ sender: NSMenuItem) {
+    @IBAction private func navigateToBuildTimes(_ sender: NSMenuItem) {
         configureMenuItems(showBuildTimesMenuItem: false)
         viewController?.showInstructions(false)
     }
     
-    @IBAction func visitGitHubPage(_ sender: AnyObject) {
+    @IBAction private func visitGitHubPage(_ sender: AnyObject) {
         let path = "https://github.com/RobertGummesson/BuildTimeAnalyzer-for-Xcode"
         if let url = URL(string: path) {
             NSWorkspace.shared.open(url)
         }
     }
     
-    @IBAction func toggleAlwaysInFront(_ sender: NSMenuItem) {
+    @IBAction private func toggleAlwaysInFront(_ sender: NSMenuItem) {
         let alwaysInFront = sender.state == .off
         
         sender.state = alwaysInFront ? .on : .off

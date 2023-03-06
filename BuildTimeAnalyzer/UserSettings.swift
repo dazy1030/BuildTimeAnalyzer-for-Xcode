@@ -5,13 +5,12 @@
 
 import Foundation
 
-class UserSettings {
+final class UserSettings {
+    private static let derivedDataLocationKey = "derivedDataLocationKey"
+    private static let windowLevelIsNormalKey = "windowLevelIsNormalKey"
     
-    static private let derivedDataLocationKey = "derivedDataLocationKey"
-    static private let windowLevelIsNormalKey = "windowLevelIsNormalKey"
-    
-    static private var _derivedDataLocation: String?
-    static private var _windowLevelIsNormal: Bool?
+    private static var _derivedDataLocation: String?
+    private static var _windowLevelIsNormal: Bool?
     
     static var derivedDataLocation: String {
         get {

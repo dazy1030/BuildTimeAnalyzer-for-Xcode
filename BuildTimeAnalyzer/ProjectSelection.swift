@@ -5,18 +5,18 @@
 
 import Cocoa
 
-protocol ProjectSelectionDelegate: class {
+protocol ProjectSelectionDelegate: AnyObject {
     func didSelectProject(with database: XcodeDatabase)
 }
 
-class ProjectSelection: NSObject {
-    
-    @IBOutlet weak var tableView: NSTableView!
-    weak var delegate: ProjectSelectionDelegate?
+final class ProjectSelection: NSObject {
+    @IBOutlet private weak var tableView: NSTableView!
     
     private var dataSource: [XcodeDatabase] = []
     
-    static private let dateFormatter: DateFormatter = {
+    weak var delegate: ProjectSelectionDelegate?
+    
+    private static let dateFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.timeStyle = .short
         dateFormatter.dateStyle = .medium
@@ -33,7 +33,7 @@ class ProjectSelection: NSObject {
     
     // MARK: Actions
     
-    @IBAction func didSelectCell(_ sender: NSTableView) {
+    @IBAction private func didSelectCell(_ sender: NSTableView) {
         guard sender.selectedRow != -1 else { return }
         delegate?.didSelectProject(with: dataSource[sender.selectedRow])
     }
@@ -50,7 +50,6 @@ extension ProjectSelection: NSTableViewDataSource {
 // MARK: NSTableViewDelegate
 
 extension ProjectSelection: NSTableViewDelegate {
-    
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard let tableColumn = tableColumn, let columnIndex = tableView.tableColumns.firstIndex(of: tableColumn) else { return nil }
         

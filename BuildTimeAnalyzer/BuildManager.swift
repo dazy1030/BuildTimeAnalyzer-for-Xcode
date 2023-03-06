@@ -5,12 +5,12 @@
 
 import Cocoa
 
-protocol BuildManagerDelegate: class {
+protocol BuildManagerDelegate: AnyObject {
     func derivedDataDidChange()
     func buildManager(_ buildManager: BuildManager, shouldParseLogWithDatabase database: XcodeDatabase)
 }
 
-class BuildManager: NSObject {
+final class BuildManager: NSObject {
     
     weak var delegate: BuildManagerDelegate?
     
@@ -37,12 +37,12 @@ class BuildManager: NSObject {
         derivedDataDirectoryMonitor.stopMonitoring()
     }
     
-    func database(forFolder URL: URL) -> XcodeDatabase? {
+    private func database(forFolder URL: URL) -> XcodeDatabase? {
         let databaseURL = URL.appendingPathComponent("Cache.db")
         return XcodeDatabase(fromPath: databaseURL.path)
     }
     
-    func processDerivedData() {
+    private func processDerivedData() {
         guard let mostRecent = DerivedDataManager.derivedData().first else { return }
         
         let logFolder = mostRecent.url.appendingPathComponent("Logs/Build").path
@@ -52,7 +52,7 @@ class BuildManager: NSObject {
         logFolderDirectoryMonitor.startMonitoring(path: logFolder)
     }
     
-    func processLogFolder(with url: URL) {
+    private func processLogFolder(with url: URL) {
         guard let activeDatabase = database(forFolder: url),
             activeDatabase.isBuildType,
             activeDatabase != currentDataBase else { return }
@@ -61,6 +61,8 @@ class BuildManager: NSObject {
         delegate?.buildManager(self, shouldParseLogWithDatabase: activeDatabase)
     }
 }
+
+// MARK: - DirectoryMonitorDelegate
 
 extension BuildManager: DirectoryMonitorDelegate {
     func directoryMonitorDidObserveChange(_ directoryMonitor: DirectoryMonitor, isDerivedData: Bool) {
