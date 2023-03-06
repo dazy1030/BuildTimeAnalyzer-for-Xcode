@@ -5,7 +5,7 @@
 
 import Foundation
 
-@objcMembers class CompileMeasure: NSObject {
+@objcMembers final class CompileMeasure: NSObject {
     
     dynamic var time: Double
     var path: String
@@ -15,12 +15,12 @@ import Foundation
 
     private var locationArray: [Int]
 
-    public enum Order: String {
+    enum Order: String {
         case filename
         case time
     }
 
-    var fileAndLine: String {
+    private var fileAndLine: String {
         return "\(filename):\(locationArray[0])"
     }
 

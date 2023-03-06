@@ -8,7 +8,7 @@
 
 import Foundation
 
-class ViewControllerDataSource {
+final class ViewControllerDataSource {
 
     var aggregateByFile = false {
         didSet {

@@ -5,8 +5,7 @@
 
 import Foundation
 
-class DerivedDataManager {
-    
+final class DerivedDataManager {
     static func derivedData() -> [File] {
         let url = URL(fileURLWithPath: UserSettings.derivedDataLocation)
         
@@ -23,7 +22,7 @@ class DerivedDataManager {
         }.sorted{ $0.date > $1.date }
     }
     
-    static func listFolders(at url: URL) -> [URL] {
+    private static func listFolders(at url: URL) -> [URL] {
         let fileManager = FileManager.default
         let keys = [URLResourceKey.nameKey, URLResourceKey.isDirectoryKey]
         let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles, .skipsPackageDescendants, .skipsSubdirectoryDescendants]

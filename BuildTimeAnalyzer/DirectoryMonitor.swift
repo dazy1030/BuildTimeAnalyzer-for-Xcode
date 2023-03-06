@@ -9,18 +9,16 @@ protocol DirectoryMonitorDelegate: AnyObject {
     func directoryMonitorDidObserveChange(_ directoryMonitor: DirectoryMonitor, isDerivedData: Bool)
 }
 
-class DirectoryMonitor {
-    var dispatchQueue: DispatchQueue
+final class DirectoryMonitor {
+    private var dispatchQueue: DispatchQueue
+    private var fileDescriptor: Int32 = -1
+    private var dispatchSource: DispatchSourceFileSystemObject?
+    private var isDerivedData: Bool
+    private var lastDerivedDataDate = Date()
+    private var isMonitoringDates = false
     
-    weak var delegate: DirectoryMonitorDelegate?
-    
-    var fileDescriptor: Int32 = -1
-    var dispatchSource: DispatchSourceFileSystemObject?
-    var isDerivedData: Bool
     var path: String?
-    var timer: Timer?
-    var lastDerivedDataDate = Date()
-    var isMonitoringDates = false
+    weak var delegate: DirectoryMonitorDelegate?
     
     init(isDerivedData: Bool) {
         self.isDerivedData = isDerivedData
@@ -63,7 +61,7 @@ class DirectoryMonitor {
         path = nil
     }
     
-    func monitorModificationDates() {
+    private func monitorModificationDates() {
         if let date = DerivedDataManager.derivedData().first?.date, date > lastDerivedDataDate {
             lastDerivedDataDate = date
             self.delegate?.directoryMonitorDidObserveChange(self, isDerivedData: self.isDerivedData)
