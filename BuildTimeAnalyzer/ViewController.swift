@@ -5,23 +5,22 @@
 
 import Cocoa
 
-class ViewController: NSViewController {
+final class ViewController: NSViewController {
+    @IBOutlet private var buildManager: BuildManager!
+    @IBOutlet private weak var cancelButton: NSButton!
+    @IBOutlet private weak var compileTimeTextField: NSTextField!
+    @IBOutlet private weak var derivedDataTextField: NSTextField!
+    @IBOutlet private weak var instructionsView: NSView!
+    @IBOutlet private weak var leftButton: NSButton!
+    @IBOutlet private weak var perFileButton: NSButton!
+    @IBOutlet private weak var progressIndicator: NSProgressIndicator!
+    @IBOutlet private weak var projectSelection: ProjectSelection!
+    @IBOutlet private weak var searchField: NSSearchField!
+    @IBOutlet private weak var statusLabel: NSTextField!
+    @IBOutlet private weak var statusTextField: NSTextField!
+    @IBOutlet private weak var tableView: NSTableView!
+    @IBOutlet private weak var tableViewContainerView: NSScrollView!
     
-    @IBOutlet var buildManager: BuildManager!
-    @IBOutlet weak var cancelButton: NSButton!
-    @IBOutlet weak var compileTimeTextField: NSTextField!
-    @IBOutlet weak var derivedDataTextField: NSTextField!
-    @IBOutlet weak var instructionsView: NSView!
-    @IBOutlet weak var leftButton: NSButton!
-    @IBOutlet weak var perFileButton: NSButton!
-    @IBOutlet weak var progressIndicator: NSProgressIndicator!
-    @IBOutlet weak var projectSelection: ProjectSelection!
-    @IBOutlet weak var searchField: NSSearchField!
-    @IBOutlet weak var statusLabel: NSTextField!
-    @IBOutlet weak var statusTextField: NSTextField!
-    @IBOutlet weak var tableView: NSTableView!
-    @IBOutlet weak var tableViewContainerView: NSScrollView!
-
     private let dataSource = ViewControllerDataSource()
     
     private var currentKey: String?
@@ -29,7 +28,7 @@ class ViewController: NSViewController {
     
     private var processor = LogProcessor()
     
-    var processingState: ProcessingState = .waiting {
+    private var processingState: ProcessingState = .waiting {
         didSet {
             updateViewForState()
         }
@@ -45,10 +44,10 @@ class ViewController: NSViewController {
         buildManager.delegate = self
         projectSelection.delegate = self
         projectSelection.listFolders()
-
+        
         tableView.tableColumns[0].sortDescriptorPrototype = NSSortDescriptor(key: CompileMeasure.Order.time.rawValue, ascending: true)
         tableView.tableColumns[1].sortDescriptorPrototype = NSSortDescriptor(key: CompileMeasure.Order.filename.rawValue, ascending: true)
-
+        
         NotificationCenter.default.addObserver(self, selector: #selector(windowWillClose(notification:)), name: NSWindow.willCloseNotification, object: nil)
     }
     
@@ -61,30 +60,13 @@ class ViewController: NSViewController {
     
     override func viewWillDisappear() {
         super.viewWillDisappear()
-
+        
         // Reset window level before view is hidden
         // Reference: https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/WinPanel/Concepts/WindowLevel.html
         makeWindowTopMost(topMost: false)
     }
     
-    @objc func windowWillClose(notification: NSNotification) {
-        guard let object = notification.object, !(object is NSPanel) else { return }
-        NotificationCenter.default.removeObserver(self)
-        
-        processor.shouldCancel = true
-        NSApp.terminate(self)
-    }
-    
-    // MARK: Layout
-    
-    func configureLayout() {
-        updateTotalLabel(with: 0)
-        updateViewForState()
-        showInstructions(true)
-        
-        derivedDataTextField.stringValue = UserSettings.derivedDataLocation
-        makeWindowTopMost(topMost: UserSettings.windowShouldBeTopMost)
-    }
+    // MARK: - Internal functions
     
     func showInstructions(_ show: Bool) {
         instructionsView.isHidden = !show
@@ -99,7 +81,38 @@ class ViewController: NSViewController {
         }
     }
     
-    func updateViewForState() {
+    func cancelProcessing() {
+        guard processingState == .processing else { return }
+        
+        processor.shouldCancel = true
+        cancelButton.isHidden = true
+    }
+    
+    func makeWindowTopMost(topMost: Bool) {
+        if let window = NSApplication.shared.windows.first {
+            let level: CGWindowLevelKey = topMost ? .floatingWindow : .normalWindow
+            window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(level)))
+        }
+    }
+    
+    @objc private func windowWillClose(notification: NSNotification) {
+        guard let object = notification.object, !(object is NSPanel) else { return }
+        NotificationCenter.default.removeObserver(self)
+        
+        processor.shouldCancel = true
+        NSApp.terminate(self)
+    }
+    
+    private func configureLayout() {
+        updateTotalLabel(with: 0)
+        updateViewForState()
+        showInstructions(true)
+        
+        derivedDataTextField.stringValue = UserSettings.derivedDataLocation
+        makeWindowTopMost(topMost: UserSettings.windowShouldBeTopMost)
+    }
+    
+    private func updateViewForState() {
         switch processingState {
         case .processing:
             showInstructions(false)
@@ -126,36 +139,29 @@ class ViewController: NSViewController {
         }
     }
     
-    func makeWindowTopMost(topMost: Bool) {
-        if let window = NSApplication.shared.windows.first {
-            let level: CGWindowLevelKey = topMost ? .floatingWindow : .normalWindow
-            window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(level)))
-        }
-    }
-    
     // MARK: Actions
     
-    @IBAction func perFileCheckboxClicked(_ sender: NSButton) {
+    @IBAction private func perFileCheckboxClicked(_ sender: NSButton) {
         dataSource.aggregateByFile = (sender.state.rawValue == 1)
         tableView.reloadData()
     }
     
-    @IBAction func clipboardButtonClicked(_ sender: AnyObject) {
+    @IBAction private func clipboardButtonClicked(_ sender: AnyObject) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.writeObjects(["-Xfrontend -debug-time-function-bodies" as NSPasteboardWriting])
     }
     
-    @IBAction func visitDerivedData(_ sender: AnyObject) {
+    @IBAction private func visitDerivedData(_ sender: AnyObject) {
         guard let url = URL(string: derivedDataTextField.stringValue) else { return }
         NSWorkspace.shared.open(url)
     }
     
     
-    @IBAction func cancelButtonClicked(_ sender: AnyObject) {
+    @IBAction private func cancelButtonClicked(_ sender: AnyObject) {
         processor.shouldCancel = true
     }
     
-    @IBAction func leftButtonClicked(_ sender: NSButton) {
+    @IBAction private func leftButtonClicked(_ sender: NSButton) {
         configureMenuItems(showBuildTimesMenuItem: true)
         
         cancelProcessing()
@@ -163,35 +169,15 @@ class ViewController: NSViewController {
         projectSelection.listFolders()
     }
     
-    func controlTextDidChange(_ obj: Notification) {
-        if let field = obj.object as? NSSearchField, field == searchField {
-            dataSource.filter = searchField.stringValue
-            tableView.reloadData()
-        } else if let field = obj.object as? NSTextField, field == derivedDataTextField {
-            buildManager.stopMonitoring()
-            UserSettings.derivedDataLocation = field.stringValue
-
-            projectSelection.listFolders()
-            buildManager.startMonitoring()
-        }
-    }
+    // MARK: - Private functions
     
-    // MARK: Utilities
-    
-    func cancelProcessing() {
-        guard processingState == .processing else { return }
-        
-        processor.shouldCancel = true
-        cancelButton.isHidden = true
-    }
-    
-    func configureMenuItems(showBuildTimesMenuItem: Bool) {
+    private func configureMenuItems(showBuildTimesMenuItem: Bool) {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.configureMenuItems(showBuildTimesMenuItem: showBuildTimesMenuItem)
         }
     }
     
-    func processLog(with database: XcodeDatabase) {
+    private func processLog(with database: XcodeDatabase) {
         guard processingState != .processing else {
             if let currentKey = currentKey, currentKey != database.key {
                 nextDatabase = database
@@ -212,7 +198,7 @@ class ViewController: NSViewController {
         }
     }
     
-    func handleProcessorUpdate(result: [CompileMeasure], didComplete: Bool, didCancel: Bool) {
+    private func handleProcessorUpdate(result: [CompileMeasure], didComplete: Bool, didCancel: Bool) {
         dataSource.resetSourceData(newSourceData: result)
         tableView.reloadData()
         
@@ -221,7 +207,7 @@ class ViewController: NSViewController {
         }
     }
     
-    func completeProcessorUpdate(didCancel: Bool) {
+    private func completeProcessorUpdate(didCancel: Bool) {
         let didSucceed = !dataSource.isEmpty()
         
         var stateName = ProcessingState.failedString
@@ -248,7 +234,7 @@ class ViewController: NSViewController {
         }
     }
     
-    func updateTotalLabel(with buildTime: Int) {
+    private func updateTotalLabel(with buildTime: Int) {
         let text = "Build duration: " + (buildTime < 60 ? "\(buildTime)s" : "\(buildTime / 60)m \(buildTime % 60)s")
         compileTimeTextField.stringValue = text
     }
@@ -302,6 +288,19 @@ extension ViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
         dataSource.sortDescriptors = tableView.sortDescriptors
         tableView.reloadData()
+    }
+    
+    func controlTextDidChange(_ obj: Notification) {
+        if let field = obj.object as? NSSearchField, field == searchField {
+            dataSource.filter = searchField.stringValue
+            tableView.reloadData()
+        } else if let field = obj.object as? NSTextField, field == derivedDataTextField {
+            buildManager.stopMonitoring()
+            UserSettings.derivedDataLocation = field.stringValue
+
+            projectSelection.listFolders()
+            buildManager.startMonitoring()
+        }
     }
 }
 
